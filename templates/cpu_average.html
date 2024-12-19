@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CPU Average Utilisation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f9;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      margin-top: 20px;
+    }
+
+    .card {
+      display: inline-block;
+      padding: 20px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .value {
+      font-size: 2rem;
+      color: #007BFF;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h2>CPU Average Utilisation</h2>
+      <div class="value">{{ average }}</div>
+    </div>
+    <a href="/cpu" style="margin-top: 20px; display: block;">Back to CPU Details</a>
+  </div>
+</body>
+</html>

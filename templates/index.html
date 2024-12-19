@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>System Monitor Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f9;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .box {
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+
+    .box:hover {
+      transform: scale(1.05);
+    }
+
+    .box h2 {
+      font-size: 1.5em;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <h1 style="text-align: center; margin-bottom: 40px;">System Monitor Dashboard</h1>
+  <div class="container">
+    <div class="box" onclick="navigateTo('cpu')">
+      <h2>CPU</h2>
+    </div>
+    <div class="box" onclick="navigateTo('gpu')">
+      <h2>GPU</h2>
+    </div>
+    <div class="box" onclick="navigateTo('ram')">
+      <h2>RAM</h2>
+    </div>
+    <div class="box" onclick="navigateTo('storage')">
+      <h2>Storage</h2>
+    </div>
+    <div class="box" onclick="navigateTo('coolant')">
+      <h2>Coolant</h2>
+    </div>
+  </div>
+
+  <script>
+    function navigateTo(section) {
+      window.location.href = `/${section}`;
+    }
+  </script>
+</body>
+</html>

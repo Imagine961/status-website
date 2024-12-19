@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ section }} Details</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f9;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .content {
+      margin-top: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .card {
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      width: 300px;
+      text-align: left;
+    }
+
+    .card h3 {
+      font-size: 1.25em;
+      margin: 0 0 10px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .key-value {
+      margin: 10px 0;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .value {
+      color: #007BFF;
+    }
+
+    .chart-container {
+      margin-top: 20px;
+      width: 80%;
+      max-width: 800px;
+    }
+
+    .controls {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    button.active {
+      background-color: #0056b3;
+    }
+
+    .back {
+      margin-top: 30px;
+      padding: 10px 20px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .back:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>{{ section }} Details</h1>
+
+    <!-- Statistics Section -->
+    <div class="content">
+      {% for key, value in data.items() %}
+      <div class="card">
+        <h3>{{ key }}</h3>
+        {% if value is mapping %}
+        {% for subkey, subvalue in value.items() %}
+        <div class="key-value">
+          <span class="key">{{ subkey }}</span>
+          <span class="value" id="live-{{ section|lower }}-{{ subkey|lower }}">{{ subvalue }}</span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="key-value">
+          <span class="key">Value</span>
+          <span class="value" id="live-{{ section|lower }}-{{ key|lower }}">{{ value }}</span>
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Chart Section -->
+    <div class="chart-container">
+      <canvas id="chart"></canvas>
+    </div>
+    <div class="controls">
+      <button class="time-btn active" data-time="5">5s</button>
+      <button class="time-btn" data-time="30">30s</button>
+      <button class="time-btn" data-time="60">1min</button>
+      <button class="time-btn" data-time="120">2min</button>
+      <button class="time-btn" data-time="300">5min</button>
+    </div>
+
+    <!-- Back to Dashboard Button -->
+    <a href="/" class="back">Return to Dashboard</a>
+  </div>
+
+  <!-- Scripts -->
+  <script>
+    let chart;
+    let dataHistory = [];
+    let timeRange = 5; // Default time range in seconds
+    const refreshInterval = 500; // Refresh data every 0.5 seconds
+    const maxDataPoints = 600; // Maximum data points for 5 minutes (0.5s intervals)
+
+    function createChart() {
+      const ctx = document.getElementById('chart').getContext('2d');
+      const section = "{{ section }}".toLowerCase();
+
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            label: `${section.toUpperCase()} Over Time`,
+            data: [],
+            borderColor: '#007BFF',
+            borderWidth: 2,
+            fill: false,
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'Time (seconds)'
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: section === 'cpu' ? 'Average Utilisation (%)' : `${section.toUpperCase()} Value`
+              },
+              min: 0,
+              max: section === 'cpu' ? 100 : undefined
+            }
+          }
+        }
+      });
+    }
+
+    function fetchData() {
+      const section = "{{ section }}".toLowerCase();
+      fetch(`/api/${section}`)
+        .then(response => response.json())
+        .then(data => {
+          // Update live data in the cards
+          Object.entries(data).forEach(([key, value]) => {
+            const element = document.getElementById(`live-${section}-${key.toLowerCase()}`);
+            if (element) element.textContent = value;
+          });
+
+          // Add new data point to history
+          const value = extractValue(data, section);
+          const timestamp = new Date().toLocaleTimeString();
+
+          dataHistory.push({ time: timestamp, value });
+          if (dataHistory.length > maxDataPoints) dataHistory.shift();
+
+          // Update chart with data in the selected time range
+          const rangeData = dataHistory.slice(-timeRange * 2);
+          chart.data.labels = rangeData.map(d => d.time);
+          chart.data.datasets[0].data = rangeData.map(d => d.value);
+          chart.update();
+        })
+        .catch(error => console.error('Error fetching data:', error));
+    }
+
+    function extractValue(data, section) {
+      if (section === 'cpu') return parseFloat(data['Average Utilisation'].replace('%', ''));
+      if (data.Utilisation) return parseFloat(data.Utilisation.replace('%', ''));
+      if (data.Temperature) return parseFloat(data.Temperature.replace('°C', ''));
+      return 0;
+    }
+
+    document.querySelectorAll('.time-btn').forEach(button => {
+      button.addEventListener('click', () => {
+        document.querySelectorAll('.time-btn').forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        timeRange = parseInt(button.dataset.time);
+      });
+    });
+
+    createChart();
+    setInterval(fetchData, refreshInterval);
+  </script>
+</body>
+</html>
